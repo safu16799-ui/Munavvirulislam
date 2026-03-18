@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Munavvirul Islam Madrasa - Book Report System</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- ====================================================
+  FIREBASE SETUP INSTRUCTIONS
+  =====================================================
+  1. Go to https://console.firebase.google.com
+  2. Click "Add project" → name it "madrasa-books" → Continue
+  3. Disable Google Analytics → Create project
+  4. Click "Firestore Database" → Create database → Start in TEST mode → Enable
+  5. Click the gear icon ⚙️ → Project settings
+  6. Scroll down to "Your apps" → click </> (Web)
+  7. Register app name "madrasa" → Register app
+  8. Copy the firebaseConfig values below and REPLACE the placeholders
+  ===================================================== -->
+
+<style>
+  :root{--sky:#0ea5e9;--sky-dark:#0284c7;--sky-light:#e0f2fe;--sky-pale:#f0f9ff;--sky-deep:#075985;--accent:#f59e0b;--green:#10b981;--red:#ef4444;--gray:#64748b;--text:#0f172a;--shadow:0 4px 24px rgba(14,165,233,.15);--radius:16px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#e0f2fe 0%,#f0f9ff 50%,#bae6fd 100%);min-height:100vh;color:var(--text)}
+  .screen{display:none;min-height:100vh}.screen.active{display:block}
+  #login-screen{display:none;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+  #login-screen.active{display:flex}
+  .login-card{background:#fff;border-radius:24px;padding:44px 36px;width:100%;max-width:430px;box-shadow:0 20px 60px rgba(14,165,233,.2);text-align:center;position:relative;overflow:hidden}
+  .login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,var(--sky),var(--accent))}
+  .login-logo{font-family:'Amiri',serif;font-size:2.2rem;color:var(--sky-deep);margin-bottom:2px}
+  .login-subtitle{color:var(--gray);font-size:0.82rem;margin-bottom:28px}
+  .login-tabs{display:flex;gap:8px;margin-bottom:24px}
+  .login-tab{flex:1;padding:10px;border:2px solid var(--sky-light);border-radius:10px;background:#fff;cursor:pointer;font-family:'Poppins',sans-serif;font-size:0.88rem;color:var(--gray);transition:all .2s}
+  .login-tab.active{background:var(--sky);color:#fff;border-color:var(--sky)}
+  .form-group{margin-bottom:16px;text-align:left}
+  .form-group label{display:block;font-size:0.78rem;font-weight:600;color:var(--sky-deep);margin-bottom:5px}
+  .form-group select,.form-group input{width:100%;padding:11px 14px;border:2px solid var(--sky-light);border-radius:10px;font-family:'Poppins',sans-serif;font-size:0.88rem;outline:none;transition:border .2s;background:var(--sky-pale)}
+  .form-group select:focus,.form-group input:focus{border-color:var(--sky)}
+  .btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,var(--sky),var(--sky-dark));color:#fff;border:none;border-radius:12px;font-family:'Poppins',sans-serif;font-size:0.95rem;font-weight:600;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 4px 16px rgba(14,165,233,.4)}
+  .btn-primary:hover{transform:translateY(-2px)}
+  .error-msg{color:var(--red);font-size:0.78rem;margin-top:8px}
+  .topnav{background:linear-gradient(135deg,var(--sky-deep),var(--sky-dark));padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:64px;box-shadow:0 4px 20px rgba(7,89,133,.3);position:sticky;top:0;z-index:100}
+  .nav-brand{font-family:'Amiri',serif;font-size:1.35rem;color:#fff}
+  .nav-right{display:flex;align-items:center;gap:14px}
+  .nav-user{color:rgba(255,255,255,.85);font-size:0.82rem}
+  .btn-nav{padding:7px 16px;border:1.5px solid rgba(255,255,255,.4);border-radius:8px;background:transparent;color:#fff;font-family:'Poppins',sans-serif;font-size:0.8rem;cursor:pointer;transition:all .2s}
+  .btn-nav:hover{background:rgba(255,255,255,.15)}
+  .main-content{padding:28px;max-width:1140px;margin:0 auto}
+  .card{background:#fff;border-radius:var(--radius);padding:26px;box-shadow:var(--shadow);margin-bottom:22px}
+  .card-title{font-size:1.05rem;font-weight:700;color:var(--sky-deep);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+  .class-selector{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:24px}
+  .class-selector label{font-weight:600;color:var(--sky-deep)}
+  .class-selector select{padding:9px 18px;border:2px solid var(--sky);border-radius:10px;font-family:'Poppins',sans-serif;font-size:0.92rem;outline:none;background:var(--sky-pale);cursor:pointer;color:var(--sky-deep);font-weight:600}
+  .books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;margin-bottom:24px}
+  .book-card{background:var(--sky-pale);border:2px solid var(--sky-light);border-radius:14px;padding:18px 14px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+  .book-card:hover{border-color:var(--sky);transform:translateY(-3px);box-shadow:0 8px 24px rgba(14,165,233,.15)}
+  .book-card.selected{border-color:var(--sky);background:var(--sky-light)}
+  .book-card.selected .check{display:flex}
+  .check{display:none;position:absolute;top:10px;right:10px;width:24px;height:24px;background:var(--sky);border-radius:50%;align-items:center;justify-content:center;color:#fff;font-size:13px}
+  .book-emoji{font-size:2rem;margin-bottom:7px}
+  .book-name{font-size:0.82rem;font-weight:600;color:var(--text)}
+  .book-price{font-size:0.75rem;color:var(--sky-dark);margin-top:2px}
+  .book-cost{font-size:0.85rem;font-weight:700;color:var(--green);margin-top:4px}
+  .total-bar{background:linear-gradient(135deg,var(--sky-deep),var(--sky));border-radius:14px;padding:16px 22px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .total-bar .lbl{color:rgba(255,255,255,.85);font-size:0.85rem}
+  .total-bar .amount{color:#fff;font-size:1.5rem;font-weight:700}
+  .total-bar .books-count{color:rgba(255,255,255,.75);font-size:0.78rem}
+  .submit-section{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+  .btn-submit{padding:13px 44px;background:linear-gradient(135deg,var(--green),#059669);color:#fff;border:none;border-radius:12px;font-family:'Poppins',sans-serif;font-size:0.95rem;font-weight:600;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(16,185,129,.4)}
+  .btn-submit:hover{transform:translateY(-2px)}
+  .success-msg{text-align:center;padding:18px;background:#d1fae5;border-radius:12px;color:#065f46;font-weight:600;margin-top:14px}
+  .admin-tabs{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
+  .admin-tab{padding:9px 20px;border-radius:10px;border:2px solid var(--sky-light);background:#fff;font-family:'Poppins',sans-serif;font-size:0.85rem;font-weight:500;cursor:pointer;color:var(--gray);transition:all .2s}
+  .admin-tab.active{background:var(--sky);color:#fff;border-color:var(--sky)}
+  .inline-form{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .inline-form input,.inline-form select{flex:1;min-width:140px;padding:9px 12px;border:2px solid var(--sky-light);border-radius:10px;font-family:'Poppins',sans-serif;outline:none;background:var(--sky-pale);font-size:0.88rem}
+  .inline-form input:focus,.inline-form select:focus{border-color:var(--sky)}
+  .btn-add{padding:9px 20px;background:var(--sky);color:#fff;border:none;border-radius:10px;font-family:'Poppins',sans-serif;font-weight:600;cursor:pointer;font-size:0.88rem;white-space:nowrap;transition:background .2s}
+  .btn-add:hover{background:var(--sky-dark)}
+  .data-table{width:100%;border-collapse:collapse}
+  .data-table th{background:var(--sky-pale);color:var(--sky-deep);font-size:0.78rem;font-weight:700;padding:11px 14px;text-align:left;border-bottom:2px solid var(--sky-light)}
+  .data-table td{padding:11px 14px;border-bottom:1px solid var(--sky-light);font-size:0.83rem;vertical-align:middle}
+  .data-table tr:hover td{background:var(--sky-pale)}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.7rem;font-weight:600}
+  .badge-sky{background:var(--sky-light);color:var(--sky-dark)}
+  .badge-green{background:#d1fae5;color:#065f46}
+  .btn-del{padding:4px 11px;background:#fee2e2;color:var(--red);border:none;border-radius:6px;cursor:pointer;font-size:0.73rem;font-weight:600;transition:background .2s}
+  .btn-del:hover{background:#fca5a5}
+  .empty-row td{text-align:center;color:var(--gray);padding:28px}
+  .result-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
+  .result-filters select,.result-filters input{padding:9px 12px;border:2px solid var(--sky-light);border-radius:10px;font-family:'Poppins',sans-serif;outline:none;background:var(--sky-pale);font-size:0.83rem}
+  .stats-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+  .stat-box{flex:1;min-width:110px;background:var(--sky-pale);border-radius:12px;padding:13px 14px;text-align:center;border:2px solid var(--sky-light)}
+  .stat-num{font-size:1.6rem;font-weight:700;color:var(--sky-deep)}
+  .stat-lbl{font-size:0.7rem;color:var(--gray);margin-top:2px}
+  .btn-export{padding:9px 16px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:'Poppins',sans-serif;font-weight:600;cursor:pointer;font-size:0.82rem;white-space:nowrap}
+  .table-wrap{overflow-x:auto}
+  .page-hero{background:linear-gradient(135deg,var(--sky-deep) 0%,var(--sky) 100%);border-radius:18px;padding:24px 28px;margin-bottom:24px;color:#fff;display:flex;justify-content:space-between;align-items:center}
+  .page-hero h1{font-family:'Amiri',serif;font-size:1.7rem}
+  .page-hero p{font-size:0.83rem;opacity:.85;margin-top:3px}
+  .page-hero-icon{font-size:3rem;opacity:.28}
+  .paid-badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:0.7rem;font-weight:700;background:#d1fae5;color:#065f46}
+  .unpaid-badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:0.7rem;font-weight:700;background:#fee2e2;color:#991b1b}
+  .btn-whatsapp{width:100%;padding:13px;margin-top:14px;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;border-radius:12px;font-family:'Poppins',sans-serif;font-size:0.92rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(37,211,102,.4)}
+  .btn-wa-sm{padding:4px 10px;background:#25d366;color:#fff;border:none;border-radius:7px;font-family:'Poppins',sans-serif;font-size:0.72rem;font-weight:600;cursor:pointer;white-space:nowrap}
+  .btn-reminder{padding:4px 10px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-family:'Poppins',sans-serif;font-size:0.72rem;font-weight:600;cursor:pointer;white-space:nowrap}
+  .btn-markpaid{padding:4px 10px;background:var(--green);color:#fff;border:none;border-radius:7px;font-family:'Poppins',sans-serif;font-size:0.72rem;font-weight:600;cursor:pointer;white-space:nowrap}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(7,89,133,.5);backdrop-filter:blur(4px);z-index:999;align-items:center;justify-content:center;padding:16px}
+  .modal-overlay.open{display:flex}
+  .modal{background:#fff;border-radius:22px;padding:30px 26px;width:100%;max-width:480px;position:relative;box-shadow:0 24px 64px rgba(0,0,0,.2);animation:popIn .22s ease;max-height:90vh;overflow-y:auto}
+  @keyframes popIn{from{transform:scale(.93);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal-close{position:absolute;top:12px;right:12px;background:var(--sky-light);border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center;color:var(--sky-deep);font-weight:700}
+  .receipt-header{text-align:center;margin-bottom:16px}
+  .paid-stamp{display:inline-block;border:3px solid var(--green);color:var(--green);border-radius:8px;padding:3px 14px;font-size:1rem;font-weight:800;letter-spacing:2px;transform:rotate(-3deg);margin-bottom:10px}
+  .receipt-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--sky-light);font-size:0.83rem}
+  .receipt-row .rlbl{color:var(--gray)}.receipt-row .rval{font-weight:600;color:var(--text)}
+  .receipt-total{background:var(--sky-pale);border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;margin-top:10px;font-weight:700;font-size:0.92rem}
+  .receipt-total .tot-amt{color:var(--green);font-size:1.1rem}
+  .pay-class-card{border:2px solid var(--sky-light);border-radius:14px;padding:18px 20px;margin-bottom:16px;background:var(--sky-pale)}
+  .pay-class-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+  .pay-class-name{font-weight:700;font-size:1rem;color:var(--sky-deep)}
+  .pay-stats{display:flex;gap:8px;flex-wrap:wrap}
+  .pay-stat{padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:600}
+  .pst{background:var(--sky-light);color:var(--sky-deep)}
+  .psp{background:#d1fae5;color:#065f46}
+  .psn{background:#fee2e2;color:#991b1b}
+  .psa{background:#fef3c7;color:#92400e}
+  /* SUBMIT LOADING */
+  #submit-loading-overlay{position:fixed;inset:0;background:rgba(7,89,133,.7);backdrop-filter:blur(6px);z-index:9998;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+  #submit-loading-overlay.show{display:flex}
+  .submit-spinner{width:56px;height:56px;border:5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+  .submit-loading-text{color:#fff;font-family:'Poppins',sans-serif;font-size:1rem;font-weight:600}
+  /* SUCCESS POPUP */
+  #success-popup-overlay{position:fixed;inset:0;background:rgba(7,89,133,.6);backdrop-filter:blur(6px);z-index:9997;display:none;align-items:center;justify-content:center;padding:20px}
+  #success-popup-overlay.show{display:flex}
+  .success-popup{background:#fff;border-radius:24px;padding:36px 28px;width:100%;max-width:420px;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.25);animation:popIn .25s ease;position:relative}
+  .success-popup::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:linear-gradient(90deg,var(--green),#34d399);border-radius:24px 24px 0 0}
+  .success-checkmark{width:72px;height:72px;background:linear-gradient(135deg,var(--green),#34d399);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:2rem;box-shadow:0 8px 24px rgba(16,185,129,.4)}
+  .success-popup h2{font-family:'Poppins',sans-serif;font-size:1.3rem;font-weight:700;color:var(--sky-deep);margin-bottom:8px}
+  .success-popup p{font-size:0.85rem;color:var(--gray);margin-bottom:6px}
+  .success-popup .total-highlight{font-size:1.5rem;font-weight:700;color:var(--green);margin:12px 0 20px}
+  .btn-download-pdf{width:100%;padding:13px;background:linear-gradient(135deg,var(--sky),var(--sky-dark));color:#fff;border:none;border-radius:12px;font-family:'Poppins',sans-serif;font-size:0.95rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(14,165,233,.4);margin-bottom:10px;transition:transform .2s}
+  .btn-download-pdf:hover{transform:translateY(-2px)}
+  .btn-close-popup{width:100%;padding:11px;background:var(--sky-pale);color:var(--sky-deep);border:2px solid var(--sky-light);border-radius:12px;font-family:'Poppins',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer;transition:background .2s}
+  .btn-close-popup:hover{background:var(--sky-light)}
+  #loading-overlay{position:fixed;inset:0;background:rgba(7,89,133,.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}
+  #loading-overlay.hidden{display:none}
+  .spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  /* SETUP BANNER */
+  #setup-banner{background:#fef3c7;border:2px solid #f59e0b;border-radius:14px;padding:20px 24px;margin-bottom:22px;display:none}
+  #setup-banner.show{display:block}
+  .footer{text-align:center;padding:22px;color:var(--gray);font-size:0.75rem}
+  .footer span{color:var(--sky-dark);font-weight:600}
+  @media(max-width:600px){.main-content{padding:12px}.topnav{padding:0 12px}.page-hero{flex-direction:column;gap:10px}.login-card{padding:28px 18px}}
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div style="font-family:'Poppins',sans-serif;font-size:1rem;font-weight:600">Connecting to database...</div>
+  <div style="font-family:'Poppins',sans-serif;font-size:0.8rem;opacity:.75;margin-top:6px">Munavvirul Islam Madrasa</div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen" class="screen">
+  <div class="login-card">
+    <div class="login-logo">📚 منوّر الإسلام</div>
+    <div style="font-size:1rem;font-weight:700;color:var(--sky-deep);margin-bottom:2px">Munavvirul Islam Madrasa</div>
+    <div style="font-size:0.76rem;color:var(--gray);margin-bottom:2px">Padanthara &nbsp;|&nbsp; Reg. No: 2867</div>
+    <div class="login-subtitle">Book Report System</div>
+    <div class="login-tabs">
+      <button class="login-tab active" onclick="switchLoginTab('student')">🎓 Student</button>
+      <button class="login-tab" onclick="switchLoginTab('admin')">🛡️ Admin</button>
+    </div>
+    <div id="student-login-form">
+      <div class="form-group"><label>Student Name</label><input type="text" id="student-name-input" placeholder="Enter your full name"></div>
+      <div class="form-group"><label>Select Your Class</label><select id="student-class-input"><option value="">-- Choose Class --</option></select></div>
+      <div class="form-group"><label>WhatsApp Number 📱</label><input type="tel" id="student-whatsapp-input" placeholder="e.g. 9876543210"></div>
+      <button class="btn-primary" onclick="studentLogin()">Enter Student Portal →</button>
+    </div>
+    <div id="admin-login-form" style="display:none">
+      <div class="form-group"><label>Username</label><input type="text" id="admin-user" placeholder="Username"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="admin-pass" placeholder="Password"></div>
+      <button class="btn-primary" onclick="adminLogin()">Login as Admin →</button>
+    </div>
+    <div id="login-error" class="error-msg"></div>
+    <div style="margin-top:18px;font-size:0.68rem;color:var(--gray)">Developed by <span style="color:var(--sky-dark);font-weight:600">Safuvan Ash'ari</span></div>
+  </div>
+</div>
+
+<!-- STUDENT SCREEN -->
+<div id="student-screen" class="screen">
+  <div class="topnav">
+    <div class="nav-brand">📚 Munavvirul Islam Madrasa</div>
+    <div class="nav-right"><span class="nav-user" id="student-nav-name"></span><button class="btn-nav" onclick="logout()">Logout</button></div>
+  </div>
+  <div class="main-content">
+    <div class="page-hero">
+      <div><h1>Select Your Books</h1><p>Munavvirul Islam Madrasa, Padanthara · Reg. No: 2867</p></div>
+      <div class="page-hero-icon">📖</div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>🏫</span> Your Class</div>
+      <div class="class-selector"><label>Class:</label><select id="student-class-display" onchange="loadStudentBooks()"></select></div>
+      <div id="student-books-area">
+        <div class="books-grid" id="books-grid"></div>
+        <div id="total-bar" class="total-bar" style="display:none">
+          <div><div class="lbl">📚 Books Selected</div><div class="books-count" id="total-books-count">0 books</div></div>
+          <div style="text-align:right"><div class="lbl">Total Amount</div><div class="amount" id="total-amount">₹ 0</div></div>
+        </div>
+        <div class="submit-section"><button class="btn-submit" onclick="submitBookReport()">✅ Submit Book Report</button></div>
+        <div id="submit-success" style="display:none" class="success-msg">
+          ✅ Report submitted! Your admin will contact you on WhatsApp.<br>Total Amount: <strong id="success-total"></strong>
+        </div>
+      </div>
+      <div id="no-books-msg" style="display:none;color:var(--gray);text-align:center;padding:28px">No books added to this class yet.</div>
+    </div>
+  </div>
+  <div class="footer">Developed by <span>Safuvan Ash'ari</span> &nbsp;·&nbsp; Munavvirul Islam Madrasa, Padanthara</div>
+</div>
+
+<!-- ADMIN SCREEN -->
+<div id="admin-screen" class="screen">
+  <div class="topnav">
+    <div class="nav-brand">📚 Munavvirul Islam Madrasa — Admin</div>
+    <div class="nav-right"><span class="nav-user">Admin</span><button class="btn-nav" onclick="logout()">Logout</button></div>
+  </div>
+  <div class="main-content">
+    <div id="setup-banner">
+      <strong>⚠️ Firebase not configured yet!</strong><br>
+      <span style="font-size:0.82rem">Open this file in a text editor, find the <code>firebaseConfig</code> section at the top of the &lt;script&gt; and replace the placeholder values with your Firebase project credentials. See the comments at the top of the file for step-by-step instructions.</span>
+    </div>
+    <div class="page-hero">
+      <div><h1>Admin Dashboard</h1><p>Munavvirul Islam Madrasa, Padanthara · Reg. No: 2867</p></div>
+      <div class="page-hero-icon">🛡️</div>
+    </div>
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="showAdminTab('classes')">🏫 Classes</button>
+      <button class="admin-tab" onclick="showAdminTab('books')">📚 Books</button>
+      <button class="admin-tab" onclick="showAdminTab('results')">📊 Results</button>
+      <button class="admin-tab" onclick="showAdminTab('payment')">💰 Payment</button>
+      <button class="admin-tab" onclick="showAdminTab('students')">🎓 Students</button>
+    </div>
+
+    <!-- CLASSES -->
+    <div id="tab-classes" class="admin-tab-content">
+      <div class="card">
+        <div class="card-title"><span>🏫</span> Manage Classes</div>
+        <div class="inline-form">
+          <input type="text" id="new-class-name" placeholder="e.g. Class 1, Class 5 Hifz...">
+          <button class="btn-add" onclick="addClass()">+ Add Class</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Class Name</th><th>Books</th><th>Submissions</th><th>Paid</th><th>Pending</th><th>Action</th></tr></thead>
+            <tbody id="classes-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOOKS -->
+    <div id="tab-books" class="admin-tab-content" style="display:none">
+      <div class="card">
+        <div class="card-title"><span>📚</span> Manage Books</div>
+        <div class="inline-form">
+          <select id="book-class-select"><option value="">-- Select Class --</option></select>
+          <input type="text" id="new-book-name" placeholder="Book Name">
+          <input type="text" id="new-book-subject" placeholder="Subject">
+          <input type="number" id="new-book-cost" placeholder="Cost ₹" min="0" style="max-width:95px">
+          <button class="btn-add" onclick="addBook()">+ Add Book</button>
+        </div>
+        <div class="inline-form" style="margin-bottom:14px">
+          <select id="filter-book-class" onchange="renderBooksTable()"><option value="">All Classes</option></select>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Book Name</th><th>Subject</th><th>Cost (₹)</th><th>Class</th><th>Action</th></tr></thead>
+            <tbody id="books-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="tab-results" class="admin-tab-content" style="display:none">
+      <div class="card">
+        <div class="card-title"><span>📊</span> Book Reports</div>
+        <div class="stats-row" id="results-stats"></div>
+        <div class="result-filters">
+          <select id="result-class-filter" onchange="renderResults()"><option value="">All Classes</option></select>
+          <input type="text" id="result-search" placeholder="🔍 Search student..." oninput="renderResults()" style="min-width:170px">
+          <select id="result-pay-filter" onchange="renderResults()">
+            <option value="">All Status</option><option value="paid">Paid Only</option><option value="unpaid">Pending Only</option>
+          </select>
+          <button class="btn-export" onclick="exportCSVFiltered()">⬇ Export CSV</button>
+          <button class="btn-export" style="background:#10b981" onclick="exportAllClassesExcel()">⬇ All Classes</button>
+          <button class="btn-export" style="background:#6366f1" onclick="exportClassByClass()">⬇ Per Class</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Student</th><th>Class</th><th>WhatsApp</th><th>Books</th><th>Total ₹</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="results-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENT -->
+    <div id="tab-payment" class="admin-tab-content" style="display:none">
+      <div class="card">
+        <div class="card-title"><span>💰</span> Payment Overview</div>
+        <div class="stats-row" id="payment-stats"></div>
+        <div class="result-filters">
+          <select id="payment-class-filter" onchange="renderPaymentTab()"><option value="">All Classes</option></select>
+        </div>
+        <div id="payment-classes-area"></div>
+      </div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div id="tab-students" class="admin-tab-content" style="display:none">
+      <div class="card">
+        <div class="card-title"><span>🎓</span> All Submissions by Class</div>
+        <div class="result-filters">
+          <select id="student-class-filter" onchange="renderStudentsByClass()"><option value="">All Classes</option></select>
+        </div>
+        <div id="students-by-class-area"></div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">Developed by <span>Safuvan Ash'ari</span> &nbsp;·&nbsp; Munavvirul Islam Madrasa, Padanthara</div>
+</div>
+
+<!-- RECEIPT MODAL -->
+<div class="modal-overlay" id="receipt-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeReceipt()">✕</button>
+    <div class="receipt-header">
+      <div style="font-family:'Amiri',serif;font-size:1.05rem;color:var(--sky-deep);margin-bottom:3px">منوّر الإسلام</div>
+      <div style="font-weight:700;color:var(--sky-deep)">Munavvirul Islam Madrasa</div>
+      <div style="font-size:0.73rem;color:var(--gray);margin-bottom:10px">Padanthara · Reg. No: 2867</div>
+      <div class="paid-stamp" id="receipt-stamp">✓ PAID</div>
+    </div>
+    <div id="receipt-content"></div>
+    <button class="btn-whatsapp" onclick="sendReceiptWhatsApp()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Send Receipt via WhatsApp
+    </button>
+  </div>
+</div>
+
+<!-- SUBMIT LOADING OVERLAY -->
+<div id="submit-loading-overlay">
+  <div class="submit-spinner"></div>
+  <div class="submit-loading-text">Submitting your report...</div>
+  <div style="color:rgba(255,255,255,.7);font-family:'Poppins',sans-serif;font-size:0.8rem">Please wait</div>
+</div>
+
+<!-- SUCCESS POPUP -->
+<div id="success-popup-overlay">
+  <div class="success-popup">
+    <div class="success-checkmark">✅</div>
+    <h2>Submitted Successfully!</h2>
+    <p>Your book report has been received.</p>
+    <p style="font-size:0.8rem;color:var(--sky-deep);font-weight:600" id="popup-student-info"></p>
+    <div class="total-highlight" id="popup-total"></div>
+    <div id="popup-books-list" style="text-align:left;background:var(--sky-pale);border-radius:12px;padding:14px 16px;margin-bottom:18px;font-size:0.82rem"></div>
+    <button class="btn-download-pdf" onclick="downloadReceiptPDF()">
+      📄 Download Receipt as PDF
+    </button>
+    <button class="btn-close-popup" onclick="closeSuccessPopup()">Close</button>
+    <div style="font-size:0.7rem;color:var(--gray);margin-top:12px">Munavvirul Islam Madrasa · Padanthara · Reg. No: 2867</div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, doc, addDoc, deleteDoc, getDocs, onSnapshot, updateDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ============================================================
+//  🔥 REPLACE THESE VALUES WITH YOUR FIREBASE CONFIG
+//  Get them from: Firebase Console → Project Settings → Your Apps
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyCbq9vL2UuSKxeQFfvcyJfE6E5D-WWw5x8",
+  authDomain: "madrasa-books-d6ce2.firebaseapp.com",
+  projectId: "madrasa-books-d6ce2",
+  storageBucket: "madrasa-books-d6ce2.firebasestorage.app",
+  messagingSenderId: "635225222957",
+  appId: "1:635225222957:web:75622e43007315552d2da4"
+};
+// ============================================================
+
+const CONFIGURED = firebaseConfig.apiKey !== "YOUR_API_KEY" && !firebaseConfig.apiKey.includes("REPLACEME");
+
+let app, db;
+let db_classes = [], db_books = [], db_reports = [];
+let currentUser = null, selectedBooks = new Set();
+let currentReceiptId = null;
+
+async function init() {
+  if (!CONFIGURED) {
+    // Run in localStorage fallback mode
+    document.getElementById('loading-overlay').classList.add('hidden');
+    loadFromLocal();
+    showScreen('login-screen');
+    populateLoginClassDropdown();
+    return;
+  }
+  try {
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    await loadAllData();
+    document.getElementById('loading-overlay').classList.add('hidden');
+    showScreen('login-screen');
+    populateLoginClassDropdown();
+    listenRealtime();
+  } catch(e) {
+    console.error(e);
+    document.getElementById('loading-overlay').innerHTML = `<div style="font-family:Poppins,sans-serif;color:#fff;text-align:center;padding:32px"><div style="font-size:2rem;margin-bottom:12px">❌</div><div style="font-weight:700;font-size:1.1rem">Firebase connection failed</div><div style="font-size:0.85rem;opacity:.8;margin-top:8px">${e.message}</div><button onclick="location.reload()" style="margin-top:20px;padding:10px 28px;background:#fff;color:#075985;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-family:Poppins,sans-serif">Retry</button></div>`;
+  }
+}
+
+// ── LOCAL STORAGE FALLBACK (when Firebase not configured yet) ──
+function loadFromLocal() {
+  const raw = localStorage.getItem('madrasa_db');
+  if (raw) {
+    const d = JSON.parse(raw);
+    db_classes = d.classes || [];
+    db_books = d.books || [];
+    db_reports = d.reports || [];
+  } else {
+    db_classes = [{id:'1',name:'Class 1'},{id:'2',name:'Class 2'},{id:'3',name:'Class 3'},{id:'4',name:'Class 4'},{id:'5',name:'Class 5'},{id:'6',name:'Class 6'},{id:'7',name:'Class 7'},{id:'8',name:'Class 8'},{id:'9',name:'Class 9'},{id:'10',name:'Class 10'},{id:'11',name:'Class 11'}];
+    db_books = []; db_reports = [];
+    saveLocal();
+  }
+}
+function saveLocal() {
+  localStorage.setItem('madrasa_db', JSON.stringify({ classes: db_classes, books: db_books, reports: db_reports }));
+}
+
+// ── FIREBASE LOAD ──
+async function loadAllData() {
+  const [cs, bs, rs] = await Promise.all([
+    getDocs(collection(db,'classes')),
+    getDocs(collection(db,'books')),
+    getDocs(collection(db,'reports'))
+  ]);
+  db_classes = cs.docs.map(d=>({id:d.id,...d.data()}));
+  db_books   = bs.docs.map(d=>({id:d.id,...d.data()}));
+  db_reports = rs.docs.map(d=>({id:d.id,...d.data()}));
+  // Seed default classes if empty
+  if (!db_classes.length) {
+    const names = ['Class 1','Class 2','Class 3','Class 4','Class 5','Class 6','Class 7','Class 8','Class 9','Class 10','Class 11'];
+    for (const name of names) {
+      const ref = await addDoc(collection(db,'classes'), {name, createdAt: Date.now()});
+      db_classes.push({id:ref.id, name});
+    }
+  }
+}
+
+function listenRealtime() {
+  onSnapshot(collection(db,'classes'), snap => {
+    db_classes = snap.docs.map(d=>({id:d.id,...d.data()}));
+    refreshDropdowns();
+  });
+  onSnapshot(collection(db,'books'), snap => {
+    db_books = snap.docs.map(d=>({id:d.id,...d.data()}));
+    refreshDropdowns();
+  });
+  onSnapshot(collection(db,'reports'), snap => {
+    db_reports = snap.docs.map(d=>({id:d.id,...d.data()}));
+    if (currentUser?.type === 'admin') refreshAdminView();
+  });
+}
+
+function refreshDropdowns() {
+  populateLoginClassDropdown();
+  if (currentUser?.type === 'admin') populateAdminDropdowns();
+  if (currentUser?.type === 'student') {
+    const sel = document.getElementById('student-class-display');
+    const cur = sel.value;
+    sel.innerHTML = '';
+    db_classes.forEach(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name;if(c.id===cur)o.selected=true;sel.appendChild(o);});
+  }
+}
+
+function refreshAdminView() {
+  const active = [...document.querySelectorAll('.admin-tab')].find(t=>t.classList.contains('active'));
+  if (!active) return;
+  const idx = [...document.querySelectorAll('.admin-tab')].indexOf(active);
+  const tabs = ['classes','books','results','payment','students'];
+  const tab = tabs[idx];
+  if (tab==='classes') renderClassesTable();
+  if (tab==='results') renderResults();
+  if (tab==='payment') renderPaymentTab();
+  if (tab==='students') renderStudentsByClass();
+}
+
+// ── SAVE HELPERS ──
+async function saveClass(name) {
+  if (!CONFIGURED) {
+    const c = {id:String(Date.now()), name};
+    db_classes.push(c); saveLocal(); return c;
+  }
+  const ref = await addDoc(collection(db,'classes'), {name, createdAt:Date.now()});
+  return {id:ref.id, name};
+}
+async function removeClass(id) {
+  if (!CONFIGURED) { db_classes=db_classes.filter(c=>c.id!==id); db_books=db_books.filter(b=>b.classId!==id); saveLocal(); return; }
+  await deleteDoc(doc(db,'classes',id));
+  const booksToDelete = db_books.filter(b=>b.classId===id);
+  for (const b of booksToDelete) await deleteDoc(doc(db,'books',b.id));
+}
+async function saveBook(data) {
+  if (!CONFIGURED) {
+    const b = {id:String(Date.now()), ...data};
+    db_books.push(b); saveLocal(); return b;
+  }
+  const ref = await addDoc(collection(db,'books'), {...data, createdAt:Date.now()});
+  return {id:ref.id, ...data};
+}
+async function removeBook(id) {
+  if (!CONFIGURED) { db_books=db_books.filter(b=>b.id!==id); saveLocal(); return; }
+  await deleteDoc(doc(db,'books',id));
+}
+async function saveReport(data) {
+  if (!CONFIGURED) {
+    const r = {id:String(Date.now()), ...data};
+    db_reports.push(r); saveLocal(); return r;
+  }
+  const ref = await addDoc(collection(db,'reports'), {...data, createdAt:Date.now()});
+  return {id:ref.id, ...data};
+}
+async function updateReport(id, data) {
+  if (!CONFIGURED) {
+    const idx = db_reports.findIndex(r=>r.id===id);
+    if(idx>=0) Object.assign(db_reports[idx], data);
+    saveLocal(); return;
+  }
+  await updateDoc(doc(db,'reports',id), data);
+}
+async function removeReport(id) {
+  if (!CONFIGURED) { db_reports=db_reports.filter(r=>r.id!==id); saveLocal(); return; }
+  await deleteDoc(doc(db,'reports',id));
+}
+
+// ── LOGIN ──
+function switchLoginTab(tab) {
+  document.querySelectorAll('.login-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&tab==='student')||(i===1&&tab==='admin')));
+  document.getElementById('student-login-form').style.display=tab==='student'?'block':'none';
+  document.getElementById('admin-login-form').style.display=tab==='admin'?'block':'none';
+  document.getElementById('login-error').textContent='';
+}
+window.switchLoginTab = switchLoginTab;
+
+function showError(m){document.getElementById('login-error').textContent=m;}
+
+window.studentLogin = function() {
+  const name=document.getElementById('student-name-input').value.trim();
+  const classId=document.getElementById('student-class-input').value;
+  const wa=document.getElementById('student-whatsapp-input').value.trim();
+  if(!name){showError('Please enter your name.');return;}
+  if(!classId){showError('Please select your class.');return;}
+  if(!wa||wa.length<7){showError('Please enter your WhatsApp number.');return;}
+  currentUser={type:'student',name,classId,whatsapp:wa};
+  showScreen('student-screen');
+  initStudentScreen();
+};
+
+window.adminLogin = function() {
+  const u=document.getElementById('admin-user').value.trim();
+  const p=document.getElementById('admin-pass').value.trim();
+  if(u==='safvanc'&&p==='Safu1665'){
+    currentUser={type:'admin'};
+    showScreen('admin-screen');
+    if(!CONFIGURED) document.getElementById('setup-banner').classList.add('show');
+    initAdminScreen();
+  } else showError('Invalid username or password.');
+};
+
+window.logout = function() {
+  currentUser=null; selectedBooks.clear();
+  window._submitting=false; window._lastReport=null;
+  showScreen('login-screen');
+  ['student-name-input','student-whatsapp-input','admin-user','admin-pass'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('student-class-input').value='';
+  document.getElementById('login-error').textContent='';
+  document.getElementById('submit-success').style.display='none';
+  document.getElementById('success-popup-overlay').classList.remove('show');
+  document.getElementById('submit-loading-overlay').classList.remove('show');
+};
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function populateLoginClassDropdown(){
+  const sel=document.getElementById('student-class-input');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">-- Choose Class --</option>';
+  db_classes.forEach(c=>sel.innerHTML+=`<option value="${c.id}"${c.id===cur?' selected':''}>${c.name}</option>`);
+}
+
+// ── STUDENT ──
+function initStudentScreen(){
+  document.getElementById('student-nav-name').textContent=`👤 ${currentUser.name}`;
+  const sel=document.getElementById('student-class-display');
+  sel.innerHTML='';
+  // Bug fix: only show the student's own class, locked
+  db_classes.forEach(c=>{
+    const o=document.createElement('option');
+    o.value=c.id; o.textContent=c.name;
+    if(c.id===currentUser.classId) o.selected=true;
+    o.disabled=(c.id!==currentUser.classId);
+    sel.appendChild(o);
+  });
+  sel.style.pointerEvents='none'; sel.style.opacity='0.8';
+  selectedBooks.clear();
+  document.getElementById('submit-success').style.display='none';
+  document.getElementById('total-bar').style.display='none';
+  window._submitting=false;
+  window._lastReport=null;
+  loadStudentBooks();
+}
+
+window.loadStudentBooks = function() {
+  const classId=document.getElementById('student-class-display').value;
+  const books=db_books.filter(b=>b.classId===classId);
+  selectedBooks.clear();
+  const grid=document.getElementById('books-grid');
+  document.getElementById('submit-success').style.display='none';
+  document.getElementById('total-bar').style.display='none';
+  if(!books.length){grid.innerHTML='';document.getElementById('no-books-msg').style.display='block';document.getElementById('student-books-area').style.display='none';return;}
+  document.getElementById('no-books-msg').style.display='none';document.getElementById('student-books-area').style.display='block';
+  const emojis=['📖','📗','📘','📙','📕','📓','📔','📒','🗒️','📜','🔖'];
+  grid.innerHTML=books.map((b,i)=>`<div class="book-card" id="book-${b.id}" onclick="toggleBook('${b.id}')"><div class="check">✓</div><div class="book-emoji">${emojis[i%emojis.length]}</div><div class="book-name">${b.name}</div><div class="book-price">${b.subject}</div>${b.cost?`<div class="book-cost">₹ ${b.cost}</div>`:''}</div>`).join('');
+};
+
+function updateTotalBar(){
+  const classId=document.getElementById('student-class-display').value;
+  const books=db_books.filter(b=>b.classId===classId);
+  const sel=[...selectedBooks];
+  const total=sel.reduce((s,id)=>{const b=books.find(b=>b.id===id);return s+(b?.cost||0);},0);
+  const bar=document.getElementById('total-bar');
+  if(sel.length>0){bar.style.display='flex';document.getElementById('total-books-count').textContent=`${sel.length} book${sel.length>1?'s':''} selected`;document.getElementById('total-amount').textContent=`₹ ${total}`;}
+  else bar.style.display='none';
+}
+
+window.toggleBook = function(id){
+  if(selectedBooks.has(id)){selectedBooks.delete(id);document.getElementById(`book-${id}`)?.classList.remove('selected');}
+  else{selectedBooks.add(id);document.getElementById(`book-${id}`)?.classList.add('selected');}
+  updateTotalBar();
+};
+
+window.submitBookReport = async function(){
+  if(!selectedBooks.size){alert('Please select at least one book!');return;}
+  // Bug fix 1: prevent double-click submission
+  if(window._submitting) return;
+  // Bug fix 2: prevent duplicate submission for same student+class
+  const classId=document.getElementById('student-class-display').value;
+  const alreadySubmitted = db_reports.find(r=>
+    r.studentName.toLowerCase()===currentUser.name.toLowerCase() && r.classId===classId
+  );
+  if(alreadySubmitted){
+    alert(`You have already submitted a book report for this class!\n\nName: ${currentUser.name}\nClass: ${db_classes.find(c=>c.id===classId)?.name}`);
+    return;
+  }
+  window._submitting = true;
+  const btn=document.querySelector('.btn-submit');
+  btn.disabled=true; btn.textContent='Submitting...';
+  document.getElementById('submit-loading-overlay').classList.add('show');
+  const cls=db_classes.find(c=>c.id===classId);
+  const bookObjects=[...selectedBooks].map(id=>db_books.find(b=>b.id===id)).filter(Boolean);
+  const totalCost=bookObjects.reduce((s,b)=>s+(b.cost||0),0);
+  const reportData = {
+    studentName:currentUser.name, classId, className:cls?.name||'',
+    whatsapp:currentUser.whatsapp, books:bookObjects.map(b=>b.name),
+    bookDetails:bookObjects.map(b=>({name:b.name,subject:b.subject,cost:b.cost||0})),
+    totalCost, paid:false, submittedAt:new Date().toLocaleString()
+  };
+  try {
+    await saveReport(reportData);
+  } catch(e) {
+    document.getElementById('submit-loading-overlay').classList.remove('show');
+    btn.disabled=false; btn.textContent='✅ Submit Book Report';
+    window._submitting = false;
+    alert('Submission failed. Please check your internet and try again.');
+    return;
+  }
+  window._submitting = false;
+  // Hide loading, show success popup
+  document.getElementById('submit-loading-overlay').classList.remove('show');
+  btn.disabled=false; btn.textContent='✅ Submit Book Report';
+  document.getElementById('student-books-area').style.display='none';
+  document.getElementById('total-bar').style.display='none';
+  // Store last report for PDF
+  window._lastReport = reportData;
+  // Fill popup
+  document.getElementById('popup-student-info').textContent=`${currentUser.name} · ${cls?.name||''} · 📱 ${currentUser.whatsapp}`;
+  document.getElementById('popup-total').textContent=`Total: ₹ ${totalCost}`;
+  document.getElementById('popup-books-list').innerHTML=
+    '<div style="font-weight:600;color:var(--sky-deep);margin-bottom:8px">📚 Books Selected:</div>'+
+    bookObjects.map(b=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--sky-light)"><span>${b.name} <span style="font-size:0.72rem;color:var(--sky)">(${b.subject})</span></span><span style="font-weight:600;color:var(--green)">${b.cost?'₹'+b.cost:''}</span></div>`).join('');
+  document.getElementById('success-popup-overlay').classList.add('show');
+};
+
+window.closeSuccessPopup = function(){
+  document.getElementById('success-popup-overlay').classList.remove('show');
+  // Show a simple thank you message after closing popup
+  document.getElementById('submit-success').style.display='block';
+  document.getElementById('success-total').textContent=`₹ ${window._lastReport?.totalCost||0}`;
+};
+
+window.downloadReceiptPDF = function(){
+  const r = window._lastReport;
+  if(!r) return;
+  const details = r.bookDetails || r.books.map(b=>({name:b,subject:'',cost:0}));
+  const bookRows = details.map((b,i)=>`
+    <tr style="background:${i%2===0?'#f0f9ff':'#fff'}">
+      <td style="padding:8px 12px;border-bottom:1px solid #e0f2fe">${b.name}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e0f2fe;color:#0284c7">${b.subject||''}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e0f2fe;font-weight:700;color:#10b981;text-align:right">${b.cost?'₹ '+b.cost:'—'}</td>
+    </tr>`).join('');
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Receipt - ${r.studentName}</title>
+  <style>
+    body{font-family:'Segoe UI',sans-serif;margin:0;padding:24px;background:#f0f9ff;color:#0f172a}
+    .card{background:#fff;border-radius:16px;padding:32px;max-width:500px;margin:0 auto;box-shadow:0 4px 24px rgba(14,165,233,.15)}
+    .header{text-align:center;border-bottom:2px solid #e0f2fe;padding-bottom:18px;margin-bottom:20px}
+    .arabic{font-size:1.6rem;color:#075985;margin-bottom:4px}
+    .madrasa-name{font-size:1.1rem;font-weight:700;color:#075985}
+    .madrasa-sub{font-size:0.78rem;color:#64748b;margin-top:2px}
+    .stamp{display:inline-block;border:3px solid #f59e0b;color:#f59e0b;border-radius:8px;padding:3px 16px;font-size:1rem;font-weight:800;letter-spacing:3px;transform:rotate(-3deg);margin:12px 0}
+    .info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #e0f2fe;font-size:0.88rem}
+    .info-row .lbl{color:#64748b}.info-row .val{font-weight:600}
+    table{width:100%;border-collapse:collapse;margin:16px 0;font-size:0.85rem}
+    th{background:#e0f2fe;color:#075985;padding:10px 12px;text-align:left;font-size:0.8rem}
+    .total-box{background:#f0f9ff;border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;font-weight:700;font-size:1rem;margin-top:4px}
+    .total-amt{color:#10b981;font-size:1.2rem}
+    .footer{text-align:center;margin-top:20px;font-size:0.72rem;color:#64748b;border-top:1px solid #e0f2fe;padding-top:14px}
+    @media print{body{padding:0;background:#fff}.card{box-shadow:none;border-radius:0}}
+  </style></head><body>
+  <div class="card">
+    <div class="header">
+      <div class="arabic">منوّر الإسلام</div>
+      <div class="madrasa-name">Munavvirul Islam Madrasa</div>
+      <div class="madrasa-sub">Padanthara &nbsp;·&nbsp; Reg. No: 2867</div>
+      <div class="stamp">⏳ PENDING</div>
+      <div style="font-size:0.75rem;color:#64748b;margin-top:4px">Book Report Receipt</div>
+    </div>
+    <div class="info-row"><span class="lbl">Student</span><span class="val">${r.studentName}</span></div>
+    <div class="info-row"><span class="lbl">Class</span><span class="val">${r.className}</span></div>
+    <div class="info-row"><span class="lbl">WhatsApp</span><span class="val">${r.whatsapp||'—'}</span></div>
+    <div class="info-row"><span class="lbl">Submitted</span><span class="val">${r.submittedAt}</span></div>
+    <div style="font-weight:600;color:#075985;margin:14px 0 6px;font-size:0.85rem">📚 Books Selected</div>
+    <table><thead><tr><th>Book Name</th><th>Subject</th><th style="text-align:right">Cost</th></tr></thead>
+    <tbody>${bookRows}</tbody></table>
+    <div class="total-box"><span>Total Amount</span><span class="total-amt">₹ ${r.totalCost||0}</span></div>
+    <div class="footer">
+      <div>⏳ Payment Pending — Please pay at the madrasa</div>
+      <div style="margin-top:4px">Developed by <strong>Safuvan Ash'ari</strong> · Munavvirul Islam Madrasa</div>
+    </div>
+  </div>
+  <script>window.onload=function(){setTimeout(function(){window.print();},600);<\/script>
+  </body></html>`;
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  // Open in new tab so print dialog works on all devices including mobile
+  const win=window.open(url,'_blank');
+  if(!win){
+    // Fallback: download as file if popup blocked
+    const a=document.createElement('a');
+    a.href=url; a.download=`Receipt_${r.studentName}_${r.className}.html`;
+    a.click();
+  }
+  setTimeout(()=>URL.revokeObjectURL(url),10000);
+};
+
+// ── ADMIN ──
+function initAdminScreen(){showAdminTab('classes');populateAdminDropdowns();}
+
+function populateAdminDropdowns(){
+  ['book-class-select','filter-book-class','result-class-filter','student-class-filter','payment-class-filter'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const first=id==='book-class-select'?'<option value="">-- Select Class --</option>':'<option value="">All Classes</option>';
+    el.innerHTML=first+db_classes.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  });
+}
+
+window.showAdminTab = function(tab){
+  document.querySelectorAll('.admin-tab').forEach((t,i)=>{const tabs=['classes','books','results','payment','students'];t.classList.toggle('active',tabs[i]===tab);});
+  document.querySelectorAll('.admin-tab-content').forEach(c=>c.style.display='none');
+  document.getElementById(`tab-${tab}`).style.display='block';
+  populateAdminDropdowns();
+  if(tab==='classes')renderClassesTable();
+  if(tab==='books')renderBooksTable();
+  if(tab==='results')renderResults();
+  if(tab==='payment')renderPaymentTab();
+  if(tab==='students')renderStudentsByClass();
+};
+
+// CLASSES
+window.addClass = async function(){
+  const name=document.getElementById('new-class-name').value.trim();
+  if(!name){alert('Enter class name');return;}
+  if(db_classes.find(c=>c.name.toLowerCase()===name.toLowerCase())){alert('Already exists!');return;}
+  await saveClass(name);
+  document.getElementById('new-class-name').value='';
+  if(!CONFIGURED){renderClassesTable();populateAdminDropdowns();populateLoginClassDropdown();}
+};
+
+window.deleteClass = async function(id){
+  if(!confirm('Delete this class and all its books?'))return;
+  await removeClass(id);
+  if(!CONFIGURED){renderClassesTable();populateAdminDropdowns();}
+};
+
+function renderClassesTable(){
+  const tbody=document.getElementById('classes-table-body');
+  if(!db_classes.length){tbody.innerHTML='<tr class="empty-row"><td colspan="7">No classes yet.</td></tr>';return;}
+  tbody.innerHTML=db_classes.map((c,i)=>{
+    const books=db_books.filter(b=>b.classId===c.id).length;
+    const reps=db_reports.filter(r=>r.classId===c.id);
+    return `<tr><td>${i+1}</td><td><strong>${c.name}</strong></td><td><span class="badge badge-sky">${books}</span></td><td><span class="badge badge-sky">${reps.length}</span></td><td><span class="paid-badge">${reps.filter(r=>r.paid).length}</span></td><td><span class="unpaid-badge">${reps.filter(r=>!r.paid).length}</span></td><td><button class="btn-del" onclick="deleteClass('${c.id}')">Delete</button></td></tr>`;
+  }).join('');
+}
+
+// BOOKS
+window.addBook = async function(){
+  const classId=document.getElementById('book-class-select').value;
+  const name=document.getElementById('new-book-name').value.trim();
+  const subject=document.getElementById('new-book-subject').value.trim();
+  const cost=parseFloat(document.getElementById('new-book-cost').value)||0;
+  if(!classId){alert('Select a class');return;}if(!name){alert('Enter book name');return;}
+  await saveBook({name,subject:subject||'General',cost,classId});
+  ['new-book-name','new-book-subject','new-book-cost'].forEach(id=>document.getElementById(id).value='');
+  if(!CONFIGURED)renderBooksTable();
+};
+
+window.deleteBook = async function(id){
+  await removeBook(id);
+  if(!CONFIGURED)renderBooksTable();
+};
+
+function renderBooksTable(){
+  const filter=document.getElementById('filter-book-class')?.value;
+  const tbody=document.getElementById('books-table-body');
+  let books=filter?db_books.filter(b=>b.classId===filter):db_books;
+  if(!books.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">No books found.</td></tr>';return;}
+  tbody.innerHTML=books.map((b,i)=>{const cls=db_classes.find(c=>c.id===b.classId);return `<tr><td>${i+1}</td><td><strong>${b.name}</strong></td><td><span class="badge badge-sky">${b.subject}</span></td><td><strong style="color:var(--green)">${b.cost?'₹ '+b.cost:'—'}</strong></td><td>${cls?.name||'—'}</td><td><button class="btn-del" onclick="deleteBook('${b.id}')">Delete</button></td></tr>`;}).join('');
+}
+
+// RESULTS
+function renderResultStats(){
+  const r=db_reports,paid=r.filter(x=>x.paid);
+  document.getElementById('results-stats').innerHTML=`
+    <div class="stat-box"><div class="stat-num">${r.length}</div><div class="stat-lbl">Submissions</div></div>
+    <div class="stat-box"><div class="stat-num">${[...new Set(r.map(x=>x.classId))].length}</div><div class="stat-lbl">Classes</div></div>
+    <div class="stat-box"><div class="stat-num">${r.reduce((s,x)=>s+x.books.length,0)}</div><div class="stat-lbl">Books Requested</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--green)">₹${paid.reduce((s,x)=>s+(x.totalCost||0),0)}</div><div class="stat-lbl">Collected</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--red)">${r.filter(x=>!x.paid).length}</div><div class="stat-lbl">Pending</div></div>`;
+}
+
+function renderResults(){
+  renderResultStats();
+  const cf=document.getElementById('result-class-filter')?.value;
+  const search=document.getElementById('result-search')?.value.toLowerCase()||'';
+  const pf=document.getElementById('result-pay-filter')?.value||'';
+  const tbody=document.getElementById('results-table-body');
+  let reps=db_reports;
+  if(cf)reps=reps.filter(r=>r.classId===cf);
+  if(search)reps=reps.filter(r=>r.studentName.toLowerCase().includes(search));
+  if(pf==='paid')reps=reps.filter(r=>r.paid);
+  if(pf==='unpaid')reps=reps.filter(r=>!r.paid);
+  if(!reps.length){tbody.innerHTML='<tr class="empty-row"><td colspan="8">No submissions found.</td></tr>';return;}
+  tbody.innerHTML=reps.map((r,i)=>`<tr>
+    <td>${i+1}</td>
+    <td><strong>${r.studentName}</strong><br><span style="font-size:0.7rem;color:var(--gray)">${r.submittedAt}</span></td>
+    <td><span class="badge badge-sky">${r.className}</span></td>
+    <td><a href="https://wa.me/${r.whatsapp||''}" target="_blank" style="color:var(--green);font-weight:600;font-size:0.8rem">📱 ${r.whatsapp||'—'}</a></td>
+    <td>${r.books.map(b=>`<span class="badge badge-sky" style="margin:1px;font-size:0.65rem">${b}</span>`).join(' ')}</td>
+    <td><strong style="color:var(--sky-deep)">₹ ${r.totalCost||0}</strong></td>
+    <td>${r.paid?'<span class="paid-badge">✓ Paid</span>':'<span class="unpaid-badge">Pending</span>'}</td>
+    <td style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+      ${!r.paid?`<button class="btn-markpaid" onclick="markPaid('${r.id}')">✓ Paid</button>`:''}
+      <button class="btn-wa-sm" onclick="openReceipt('${r.id}')">🧾 Receipt</button>
+      <button class="btn-del" onclick="deleteReport('${r.id}')">🗑</button>
+    </td></tr>`).join('');
+}
+
+window.markPaid = async function(id){
+  const paidAt=new Date().toLocaleString();
+  await updateReport(id,{paid:true,paidAt});
+  if(!CONFIGURED){const r=db_reports.find(r=>r.id===id);if(r){r.paid=true;r.paidAt=paidAt;}renderResults();renderResultStats();}
+};
+
+window.deleteReport = async function(id){
+  if(!confirm('Delete this student submission?'))return;
+  await removeReport(id);
+  if(!CONFIGURED){renderResults();}
+};
+
+// PAYMENT TAB
+function renderPaymentTab(){
+  const cf=document.getElementById('payment-class-filter')?.value;
+  const classes=cf?db_classes.filter(c=>c.id===cf):db_classes;
+  const all=db_reports,paidAll=all.filter(r=>r.paid),pendAll=all.filter(r=>!r.paid);
+  document.getElementById('payment-stats').innerHTML=`
+    <div class="stat-box"><div class="stat-num">${all.length}</div><div class="stat-lbl">Total Students</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--green)">${paidAll.length}</div><div class="stat-lbl">Paid</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--red)">${pendAll.length}</div><div class="stat-lbl">Pending</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--green)">₹${paidAll.reduce((s,r)=>s+(r.totalCost||0),0)}</div><div class="stat-lbl">Collected</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--red)">₹${pendAll.reduce((s,r)=>s+(r.totalCost||0),0)}</div><div class="stat-lbl">Remaining</div></div>
+    <div class="stat-box"><div class="stat-num">₹${all.reduce((s,r)=>s+(r.totalCost||0),0)}</div><div class="stat-lbl">Total Value</div></div>`;
+  const area=document.getElementById('payment-classes-area');
+  let html='';
+  classes.forEach(cls=>{
+    const reps=db_reports.filter(r=>r.classId===cls.id);if(!reps.length)return;
+    const paid=reps.filter(r=>r.paid),pend=reps.filter(r=>!r.paid);
+    const pAmt=paid.reduce((s,r)=>s+(r.totalCost||0),0),nAmt=pend.reduce((s,r)=>s+(r.totalCost||0),0);
+    html+=`<div class="pay-class-card"><div class="pay-class-header"><div class="pay-class-name">🏫 ${cls.name}</div><div class="pay-stats"><span class="pay-stat pst">👥 ${reps.length}</span><span class="pay-stat psp">✓ ${paid.length} paid</span><span class="pay-stat psn">⏳ ${pend.length} pending</span><span class="pay-stat psa">₹${pAmt}/₹${pAmt+nAmt}</span></div></div>`;
+    if(pend.length){
+      html+=`<div style="font-size:0.8rem;font-weight:600;color:var(--red);margin-bottom:8px">⏳ Pending Payments</div><div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Student</th><th>WhatsApp</th><th>Amount ₹</th><th>Actions</th></tr></thead><tbody>`;
+      pend.forEach((r,i)=>{html+=`<tr><td>${i+1}</td><td><strong>${r.studentName}</strong></td><td><a href="https://wa.me/${r.whatsapp||''}" target="_blank" style="color:var(--green);font-size:0.8rem">📱 ${r.whatsapp||'—'}</a></td><td><strong style="color:var(--red)">₹ ${r.totalCost||0}</strong></td><td style="display:flex;gap:4px;flex-wrap:wrap"><button class="btn-markpaid" onclick="markPaidPayment('${r.id}')">✓ Mark Paid</button><button class="btn-reminder" onclick="sendReminder('${r.id}')">📲 Reminder</button></td></tr>`;});
+      html+=`</tbody></table></div>`;
+    } else { html+=`<div style="color:var(--green);font-size:0.85rem;font-weight:600;padding:8px 0">✅ All students in this class have paid!</div>`; }
+    if(paid.length){
+      html+=`<details style="margin-top:12px"><summary style="cursor:pointer;font-size:0.8rem;color:var(--sky-deep);font-weight:600;padding:6px 0">▶ Show paid students (${paid.length})</summary><div class="table-wrap" style="margin-top:8px"><table class="data-table"><thead><tr><th>#</th><th>Student</th><th>WhatsApp</th><th>Amount ₹</th><th>Paid At</th><th>Action</th></tr></thead><tbody>`;
+      paid.forEach((r,i)=>{html+=`<tr><td>${i+1}</td><td><strong>${r.studentName}</strong></td><td><a href="https://wa.me/${r.whatsapp||''}" target="_blank" style="color:var(--green);font-size:0.8rem">📱 ${r.whatsapp||'—'}</a></td><td><strong style="color:var(--green)">₹ ${r.totalCost||0}</strong></td><td style="font-size:0.72rem;color:var(--gray)">${r.paidAt||'—'}</td><td><button class="btn-wa-sm" onclick="openReceipt('${r.id}')">🧾 Receipt</button></td></tr>`;});
+      html+=`</tbody></table></div></details>`;
+    }
+    html+=`</div>`;
+  });
+  area.innerHTML=html||'<div style="color:var(--gray);text-align:center;padding:28px">No data found.</div>';
+}
+
+window.markPaidPayment = async function(id){
+  const paidAt=new Date().toLocaleString();
+  await updateReport(id,{paid:true,paidAt});
+  if(!CONFIGURED){const r=db_reports.find(r=>r.id===id);if(r){r.paid=true;r.paidAt=paidAt;}renderPaymentTab();}
+};
+
+window.sendReminder = function(id){
+  const r=db_reports.find(r=>r.id===id);if(!r)return;
+  const details=r.bookDetails||r.books.map(b=>({name:b,cost:0}));
+  const lines=details.map(b=>`  • ${b.name}${b.cost?' — ₹'+b.cost:''}`).join('\n');
+  const msg=`السلام عليكم 🌙\n\n*Munavvirul Islam Madrasa*\nPadanthara | Reg. No: 2867\n━━━━━━━━━━━━━━━\n📢 *Payment Reminder*\n\nDear *${r.studentName}* (${r.className}),\n\nThis is a gentle reminder that your book payment is still pending.\n\n📚 *Books:*\n${lines}\n\n💰 *Amount Due: ₹ ${r.totalCost||0}*\n\nPlease complete your payment at the earliest.\n\nJazakAllah Khair 🤲\n_Munavvirul Islam Madrasa_`;
+  window.open(`https://wa.me/${(r.whatsapp||'').replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,'_blank');
+};
+
+// STUDENTS BY CLASS
+function renderStudentsByClass(){
+  const filter=document.getElementById('student-class-filter')?.value;
+  const area=document.getElementById('students-by-class-area');
+  const classes=filter?db_classes.filter(c=>c.id===filter):db_classes;
+  let html='';
+  classes.forEach(cls=>{
+    const reps=db_reports.filter(r=>r.classId===cls.id);
+    html+=`<div style="margin-bottom:20px"><div style="font-weight:700;color:var(--sky-deep);margin-bottom:8px;font-size:0.92rem">🏫 ${cls.name} <span class="badge badge-green">${reps.length} submissions</span></div>`;
+    if(!reps.length){html+=`<div style="color:var(--gray);font-size:0.8rem;padding:10px;background:var(--sky-pale);border-radius:10px">No submissions yet.</div>`;}
+    else{
+      html+=`<div class="table-wrap"><table class="data-table"><thead><tr><th>#</th><th>Student</th><th>WhatsApp</th><th>Books</th><th>Total ₹</th><th>Status</th><th>Submitted</th></tr></thead><tbody>`;
+      reps.forEach((r,i)=>{html+=`<tr><td>${i+1}</td><td><strong>${r.studentName}</strong></td><td style="font-size:0.78rem">${r.whatsapp||'—'}</td><td>${r.books.map(b=>`<span class="badge badge-sky" style="margin:1px;font-size:0.65rem">${b}</span>`).join(' ')}</td><td><strong>₹ ${r.totalCost||0}</strong></td><td>${r.paid?'<span class="paid-badge">✓ Paid</span>':'<span class="unpaid-badge">Pending</span>'}</td><td style="font-size:0.7rem;color:var(--gray)">${r.submittedAt}</td></tr>`;});
+      html+=`</tbody></table></div>`;
+    }
+    html+=`</div>`;
+  });
+  area.innerHTML=html||'<div style="color:var(--gray);text-align:center;padding:28px">No data.</div>';
+}
+
+// RECEIPT
+window.openReceipt = function(id){
+  const r=db_reports.find(r=>r.id===id);if(!r)return;
+  currentReceiptId=id;
+  const details=r.bookDetails||r.books.map(b=>({name:b,cost:0}));
+  const rows=details.map(b=>`<div class="receipt-row"><span class="rlbl">${b.name}${b.subject?' <span style="font-size:0.68rem;color:var(--sky)">('+b.subject+')</span>':''}</span><span class="rval">${b.cost?'₹ '+b.cost:'—'}</span></div>`).join('');
+  const stamp=document.getElementById('receipt-stamp');
+  stamp.textContent=r.paid?'✓ PAID':'⏳ PENDING';
+  stamp.style.borderColor=r.paid?'var(--green)':'var(--accent)';
+  stamp.style.color=r.paid?'var(--green)':'var(--accent)';
+  document.getElementById('receipt-content').innerHTML=`
+    <div class="receipt-row"><span class="rlbl">Student</span><span class="rval">${r.studentName}</span></div>
+    <div class="receipt-row"><span class="rlbl">Class</span><span class="rval">${r.className}</span></div>
+    <div class="receipt-row"><span class="rlbl">WhatsApp</span><span class="rval">${r.whatsapp||'—'}</span></div>
+    <div class="receipt-row"><span class="rlbl">Date</span><span class="rval">${r.paidAt||r.submittedAt}</span></div>
+    <div style="margin:10px 0 5px;font-weight:600;color:var(--sky-deep);font-size:0.8rem">📚 Books Purchased</div>
+    ${rows}
+    <div class="receipt-total"><span>Total Amount</span><span class="tot-amt">₹ ${r.totalCost||0}</span></div>
+    <div style="text-align:center;margin-top:8px;font-size:0.7rem;color:var(--gray)">${r.paid?'✅ Payment Received — '+r.paidAt:'⏳ Payment Pending'}</div>`;
+  document.getElementById('receipt-modal').classList.add('open');
+};
+window.closeReceipt = function(){document.getElementById('receipt-modal').classList.remove('open');};
+window.sendReceiptWhatsApp = function(){
+  const r=db_reports.find(r=>r.id===currentReceiptId);if(!r)return;
+  const details=r.bookDetails||r.books.map(b=>({name:b,cost:0}));
+  const lines=details.map(b=>`  • ${b.name}${b.cost?' — ₹'+b.cost:''}`).join('\n');
+  const msg=`🕌 *Munavvirul Islam Madrasa*\nPadanthara | Reg. No: 2867\n━━━━━━━━━━━━━━━━\n🧾 *Book Report Receipt*\n\n👤 Student: *${r.studentName}*\n🏫 Class: *${r.className}*\n📅 Date: ${r.paidAt||r.submittedAt}\n\n📚 *Books Selected:*\n${lines}\n\n💰 *Total Amount: ₹ ${r.totalCost||0}*\n${r.paid?'✅ *PAID*':'⏳ Payment Pending'}\n━━━━━━━━━━━━━━━━\n_Thank you! — Munavvirul Islam Madrasa_`;
+  window.open(`https://wa.me/${(r.whatsapp||'').replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`,'_blank');
+};
+
+// EXPORT
+function downloadCSV(content,filename){const blob=new Blob(['\uFEFF'+content],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();}
+window.exportCSVFiltered = function(){
+  const cf=document.getElementById('result-class-filter')?.value;
+  const search=document.getElementById('result-search')?.value.toLowerCase()||'';
+  const pf=document.getElementById('result-pay-filter')?.value||'';
+  let reps=db_reports;
+  if(cf)reps=reps.filter(r=>r.classId===cf);
+  if(search)reps=reps.filter(r=>r.studentName.toLowerCase().includes(search));
+  if(pf==='paid')reps=reps.filter(r=>r.paid);
+  if(pf==='unpaid')reps=reps.filter(r=>!r.paid);
+  if(!reps.length){alert('No data to export.');return;}
+  const clsName=cf?(db_classes.find(c=>c.id===cf)?.name||'filtered'):'All_Classes';
+  const allBooks=[...new Set(reps.flatMap(r=>r.books))].sort();
+  let csv=`Munavvirul Islam Madrasa - Padanthara | Reg No: 2867\nClass: ${clsName.toUpperCase()} | Exported: ${new Date().toLocaleString()}\n\n`;
+  csv+=`"#","Student Name","Class","WhatsApp",${allBooks.map(b=>`"${b}"`).join(',')},"Total Books","Total Amount (Rs)","Payment Status","Paid At","Submitted At"\n`;
+  reps.forEach((r,i)=>{const c=allBooks.map(b=>r.books.includes(b)?'"✓"':'""');csv+=`"${i+1}","${r.studentName}","${r.className}","${r.whatsapp||''}",${c.join(',')},"${r.books.length}","${r.totalCost||0}","${r.paid?'PAID':'PENDING'}","${r.paidAt||''}","${r.submittedAt}"\n`;});
+  const paid=reps.filter(r=>r.paid),pAmt=paid.reduce((s,r)=>s+(r.totalCost||0),0),tAmt=reps.reduce((s,r)=>s+(r.totalCost||0),0);
+  csv+=`\n"--- Summary ---"\n"Total","${reps.length}"\n"Paid","${paid.length}"\n"Pending","${reps.length-paid.length}"\n"Collected","₹${pAmt}"\n"Remaining","₹${tAmt-pAmt}"`;
+  downloadCSV(csv,`Munavvirul_Islam_${clsName.replace(/\s/g,'_')}_Report.csv`);
+};
+window.exportAllClassesExcel = function(){
+  if(!db_reports.length){alert('No submissions yet.');return;}
+  let csv=`Munavvirul Islam Madrasa - Padanthara | Reg No: 2867\nFull Report | Exported: ${new Date().toLocaleString()}\n`;
+  db_classes.forEach(cls=>{
+    const reps=db_reports.filter(r=>r.classId===cls.id);if(!reps.length)return;
+    const allBooks=[...new Set(reps.flatMap(r=>r.books))].sort();
+    const paid=reps.filter(r=>r.paid),pAmt=paid.reduce((s,r)=>s+(r.totalCost||0),0);
+    csv+=`\n"===== ${cls.name.toUpperCase()} ===== (${reps.length} students | Paid:${paid.length} | Pending:${reps.length-paid.length} | Collected:₹${pAmt})"\n`;
+    csv+=`"#","Student","WhatsApp",${allBooks.map(b=>`"${b}"`).join(',')},"Total Books","Amount","Status","Paid At","Submitted At"\n`;
+    reps.forEach((r,i)=>{const c=allBooks.map(b=>r.books.includes(b)?'"✓"':'""');csv+=`"${i+1}","${r.studentName}","${r.whatsapp||''}",${c.join(',')},"${r.books.length}","${r.totalCost||0}","${r.paid?'PAID':'PENDING'}","${r.paidAt||''}","${r.submittedAt}"\n`;});
+  });
+  downloadCSV(csv,'Munavvirul_Islam_ALL_Classes_Report.csv');
+};
+window.exportClassByClass = function(){
+  const withData=db_classes.filter(c=>db_reports.some(r=>r.classId===c.id));
+  if(!withData.length){alert('No submissions yet.');return;}
+  if(!confirm(`Download ${withData.length} CSV files? Continue?`))return;
+  withData.forEach((cls,idx)=>{
+    setTimeout(()=>{
+      const reps=db_reports.filter(r=>r.classId===cls.id);
+      const allBooks=[...new Set(reps.flatMap(r=>r.books))].sort();
+      const paid=reps.filter(r=>r.paid),pAmt=paid.reduce((s,r)=>s+(r.totalCost||0),0),tAmt=reps.reduce((s,r)=>s+(r.totalCost||0),0);
+      let csv=`Munavvirul Islam Madrasa - Padanthara | Reg No: 2867\nClass: ${cls.name.toUpperCase()} | Exported: ${new Date().toLocaleString()}\n\n`;
+      csv+=`"#","Student","WhatsApp",${allBooks.map(b=>`"${b}"`).join(',')},"Total Books","Amount","Status","Paid At","Submitted At"\n`;
+      reps.forEach((r,i)=>{const c=allBooks.map(b=>r.books.includes(b)?'"✓"':'""');csv+=`"${i+1}","${r.studentName}","${r.whatsapp||''}",${c.join(',')},"${r.books.length}","${r.totalCost||0}","${r.paid?'PAID':'PENDING'}","${r.paidAt||''}","${r.submittedAt}"\n`;});
+      csv+=`\n"Summary"\n"Total","${reps.length}"\n"Paid","${paid.length}"\n"Pending","${reps.length-paid.length}"\n"Collected","₹${pAmt}"\n"Remaining","₹${tAmt-pAmt}"`;
+      downloadCSV(csv,`Munavvirul_Islam_${cls.name.replace(/\s+/g,'_')}_Report.csv`);
+    },idx*700);
+  });
+};
+
+window.renderBooksTable = renderBooksTable;
+window.renderStudentsByClass = renderStudentsByClass;
+window.renderResults = renderResults;
+window.renderPaymentTab = renderPaymentTab;
+
+init();
+</script>
+</body>
+</html>
